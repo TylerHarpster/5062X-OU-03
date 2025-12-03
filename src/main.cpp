@@ -8,25 +8,43 @@
 #include "catapult.hpp"
 #include "pistons.hpp"
 
-#define CATA_MOTOR_PORT 2
-#define INTAKE_MOTOR_PORT 12
+/*
+             U _____ u        _       ____    U _____ u       ____   _   _      _       ____      _                U _____ u      ____              _   _       
+ __        __\| ___"|/    U  /"\  uU |  _"\ u \| ___"|/    U /"___| |'| |'| U  /"\  uU |  _"\ u  |"|        ___    \| ___"|/     |  _"\    ___     |'| |'|      
+ \"\      /"/ |  _|"       \/ _ \/  \| |_) |/  |  _|"      \| | u  /| |_| |\ \/ _ \/  \| |_) |/U | | u     |_"_|    |  _|"      /| | | |  |_"_|   /| |_| |\     
+ /\ \ /\ / /\ | |___       / ___ \   |  _ <    | |___       | |/__ U|  _  |u / ___ \   |  _ <   \| |/__     | |     | |___      U| |_| |\  | |    U|  _  |u     
+U  \ V  V /  U|_____|     /_/   \_\  |_| \_\   |_____|       \____| |_| |_| /_/   \_\  |_| \_\   |_____|  U/| |\u   |_____|      |____/ uU/| |\u   |_| |_|      
+.-,_\ /\ /_,-.<<   >>      \\    >>  //   \\_  <<   >>      _// \\  //   \\  \\    >>  //   \\_  //  \\.-,_|___|_,-.<<   >>       |||_.-,_|___|_,-.//   \\      
+ \_)-'  '-(_/(__) (__)    (__)  (__)(__)  (__)(__) (__)    (__)(__)(_") ("_)(__)  (__)(__)  (__)(_")("_)\_)-' '-(_/(__) (__)     (__)_)\_)-' '-(_/(_") ("_)     
+             U _____ u       ____     _       ____      ____     __   __      _____    _   _  U _____ u       ____   _   _  U _____ uU _____ u ____   U _____ u 
+ __        __\| ___"|/    U /"___|U  /"\  uU |  _"\ uU |  _"\ u  \ \ / /     |_ " _|  |'| |'| \| ___"|/    U /"___| |'| |'| \| ___"|/\| ___"|// __"| u\| ___"|/ 
+ \"\      /"/ |  _|"      \| | u   \/ _ \/  \| |_) |/ \| |_) |/   \ V /        | |   /| |_| |\ |  _|"      \| | u  /| |_| |\ |  _|"   |  _|" <\___ \/  |  _|"   
+ /\ \ /\ / /\ | |___       | |/__  / ___ \   |  _ <    |  _ <    U_|"|_u      /| |\  U|  _  |u | |___       | |/__ U|  _  |u | |___   | |___  u___) |  | |___   
+U  \ V  V /  U|_____|       \____|/_/   \_\  |_| \_\   |_| \_\     |_|       u |_|U   |_| |_|  |_____|       \____| |_| |_|  |_____|  |_____| |____/>> |_____|  
+.-,_\ /\ /_,-.<<   >>      _// \\  \\    >>  //   \\_  //   \\_.-,//|(_      _// \\_  //   \\  <<   >>      _// \\  //   \\  <<   >>  <<   >>  )(  (__)<<   >>  
+ \_)-'  '-(_/(__) (__)    (__)(__)(__)  (__)(__)  (__)(__)  (__)\_) (__)    (__) (__)(_") ("_)(__) (__)    (__)(__)(_") ("_)(__) (__)(__) (__)(__)    (__) (__) 
+ */
 
-#define DRIVE_LB_PORT 6
-#define DRIVE_LM_PORT 7
-#define DRIVE_LF_PORT 8
+#define UPPER_INTAKE_MOTOR_PORT 10
+#define LOWER_INTAKE_MOTOR_PORT 14
+#define MIDDLE_INTAKE_MOTOR_PORT 1
 
-#define DRIVE_RB_PORT 3
-#define DRIVE_RM_PORT 4
-#define DRIVE_RF_PORT 5
+#define DRIVE_LB_PORT 13
+#define DRIVE_LM_PORT 12
+#define DRIVE_LF_PORT 11
 
-#define IMU_PORT 18
+#define DRIVE_RB_PORT 20
+#define DRIVE_RM_PORT 19
+#define DRIVE_RF_PORT 18
 
-#define CATA_LIMIT_SWITCH_PORT 'E'
-#define AUTON_POT_PORT 'D'
-#define INTAKE_ACTUATOR_PORT 'F'
+#define IMU_PORT 15
 
-#define RIGHT_BACK_WING_ACTUATOR_PORT 'G'
-#define LEFT_BACK_WING_ACTUATOR_PORT 'H'
+#define LEFT_ENCODER_PORT 5
+#define RIGHT_ENCODER_PORT 4
+#define BACK_ENCODER_PORT 9
+
+#define TUNG_SAHUR_ACTUATOR_PORT 'A'
+#define WING_ACTUATOR_PORT 'B'
 
 #define AUTON_SELECT_BUTTON pros::E_CONTROLLER_DIGITAL_UP
 
@@ -46,47 +64,53 @@
 
 #define LIMIT_DRIVE_SPEED_BUTTON pros::E_CONTROLLER_DIGITAL_RIGHT
 
-pros::Controller controller (pros::E_CONTROLLER_MASTER);
-pros::Motor Catapult(CATA_MOTOR_PORT, MOTOR_GEARSET_36, true);
-pros::Motor Intake(INTAKE_MOTOR_PORT, MOTOR_GEARSET_6, true);
+pros::Controller Controller (pros::E_CONTROLLER_MASTER);
+pros::Motor UpperIntake(UPPER_INTAKE_MOTOR_PORT, MOTOR_GEARSET_6, false);
+pros::Motor MiddleIntake(MIDDLE_INTAKE_MOTOR_PORT, MOTOR_GEARSET_18, true);
+pros::Motor LowerIntake(LOWER_INTAKE_MOTOR_PORT, MOTOR_GEARSET_18, false);
 
-pros::ADIDigitalIn CataLimit(CATA_LIMIT_SWITCH_PORT);
-pros::ADIAnalogIn AutonPot(AUTON_POT_PORT);
-
-pros::ADIDigitalOut IntakeActuator(INTAKE_ACTUATOR_PORT);
-
-pros::ADIDigitalOut RightBackWingActuator(RIGHT_BACK_WING_ACTUATOR_PORT);
-pros::ADIDigitalOut LeftBackWingActuator(LEFT_BACK_WING_ACTUATOR_PORT);
+pros::ADIDigitalOut wingPiston(WING_ACTUATOR_PORT);
+pros::ADIDigitalOut tonguePiston(TUNG_SAHUR_ACTUATOR_PORT);
 
 ////////////////////////////////////////////
 // LemLib Drive definitions
 ///////////////////
 
-pros::Motor drive_lb(DRIVE_LB_PORT, pros::E_MOTOR_GEARSET_06, true);
+pros::Motor drive_lb(DRIVE_LB_PORT, pros::E_MOTOR_GEARSET_06, false);
 pros::Motor drive_lm(DRIVE_LM_PORT, pros::E_MOTOR_GEARSET_06, true);
-pros::Motor drive_lf(DRIVE_LF_PORT, pros::E_MOTOR_GEARSET_06, true);
+pros::Motor drive_lf(DRIVE_LF_PORT, pros::E_MOTOR_GEARSET_06, false);
 
-pros::Motor drive_rb(DRIVE_RB_PORT, pros::E_MOTOR_GEARSET_06, false);
+pros::Motor drive_rb(DRIVE_RB_PORT, pros::E_MOTOR_GEARSET_06, true);
 pros::Motor drive_rm(DRIVE_RM_PORT, pros::E_MOTOR_GEARSET_06, false);
-pros::Motor drive_rf(DRIVE_RF_PORT, pros::E_MOTOR_GEARSET_06, false);
+pros::Motor drive_rf(DRIVE_RF_PORT, pros::E_MOTOR_GEARSET_06, true);
 
 pros::MotorGroup drive_left({drive_lb, drive_lm, drive_lf});
 pros::MotorGroup drive_right({drive_rb, drive_rm, drive_rf});
 
 pros::Imu inertial_sensor(IMU_PORT);
 
+pros::Rotation left_encoder(LEFT_ENCODER_PORT);
+pros::Rotation right_encoder(RIGHT_ENCODER_PORT);
+pros::Rotation back_encoder(BACK_ENCODER_PORT);
+
+lemlib::TrackingWheel left_tracking_wheel(&left_encoder,2.75, 5.+5./16.);
+lemlib::TrackingWheel right_tracking_wheel(&right_encoder,2.75,5.+5./16.);
+lemlib::TrackingWheel back_tracking_wheel(&back_encoder,2,4.25);
+
+
+
 lemlib::Drivetrain_t drivetrain {
     &drive_left, // left drivetrain motors
     &drive_right, // right drivetrain motors
-    11, // track width
-    3.25, // wheel diameter // 3.175
+    10.+5./8., // track width
+    2.75, // wheel diameter // 3.175
     360 // wheel rpm
 };
 
 lemlib::OdomSensors_t sensors {
-    nullptr, // vertical tracking wheel 1
-    nullptr, // vertical tracking wheel 2
-    nullptr, // horizontal tracking wheel 1
+    &left_tracking_wheel, // vertical tracking wheel 1
+    &right_tracking_wheel, // vertical tracking wheel 2
+    &back_tracking_wheel, // horizontal tracking wheel 1
     nullptr, // we don't have a second tracking wheel, so we set it to nullptr
     &inertial_sensor // inertial sensor
 };
@@ -144,9 +168,9 @@ void screen() {
     // loop forever
     while (true) {
 
-        // pros::lcd::print(1, "auton: %i", get_selected_auton(AutonPot.get_value())); // print the x position
-        controller.print(0, 0, "auton: %i   ", get_selected_auton(AutonPot.get_value()));
-        controller.clear();
+        // // pros::lcd::print(1, "auton: %i", get_selected_auton(AutonPot.get_value())); // print the x position
+        // controller.print(0, 0, "auton: %i   ", get_selected_auton(AutonPot.get_value()));
+        // controller.clear();
 
         // lemlib::Pose pose = chassis.getPose(); // get the current position of the robot
         // pros::lcd::print(0, "x: %f", pose.x); // print the x position
@@ -173,8 +197,6 @@ void initialize() {
     Catapult.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
      // create a task to print the position to the screen
-    pros::Task cataTask(cata_limit_switch_task_function);
-    pros::delay(50);    
 
     pros::lcd::set_text(2,"1 - Far 5 Ball\n" );
     pros::delay(100);
@@ -194,7 +216,6 @@ void initialize() {
  * the robot is enabled, this task will exit.
  */
 void disabled() {
-  pros::lcd::print(1, "auton: %i", get_selected_auton(AutonPot.get_value())); // print the x position
   pros::delay(10);
 }
 
@@ -229,53 +250,7 @@ void competition_initialize() {}
   5 - Far Safe AWP
 */
 void autonomous() {
-  switch (get_selected_auton(AutonPot.get_value())) {
-    case 1:
-      far_auton();
-      return;
-
-    case 2:
-      chassis.setPose(48, 57, 135);
-      near_auton();
-      return;
-
-    case 3:
-      chassis.setPose(-50, -56, 240);
-      skills();
-      return;
-    
-    case 4:
-      chassis.setPose(48, 57, 135); 
-      near_auton_safe();
-
-
-    case 5:
-      chassis.setPose(-34, 60, 180);
-      far_auton_safe();
-
-    case 6: 
-      return;
-
-    case 7:
-
-      return;
-
-    case 8:
-      return;
-    
-    case 9:
-      return;
-
-    case 10:
-      // chassis.setPose(-50, -56, 240);
-      // skills();
-
-      // chassis.setPose(-50, -56, 240);
-      // skills();
-
-      chassis.setPose(-46, -56, 0);
-      skills2();
-  }
+  
 }
 
 /**
@@ -316,17 +291,9 @@ int drive_ceiling_speed = 80;
 5 - Far Safe AWP
 */
 
-bool right_back_wing_btn_pressed = false;
-bool right_back_wing_btn_pressed_last = false;
 
-bool left_back_wing_btn_pressed = false;
-bool left_back_wing_btn_pressed_last = false;
-
-bool cata_hang_btn_pressed = false;
-bool cata_hang_btn_pressed_last = false;
-
-bool cata_hang = false;
-
+int wingState=0;
+int tongueState=0;
 
 void opcontrol() {
   
@@ -334,8 +301,6 @@ void opcontrol() {
 
 
 	while (true) {
-    pros::lcd::print(1, "auton: %i", get_selected_auton(AutonPot.get_value())); // print the x position
-
 
             // pros::lcd::print(3,"%i", distance_sensor.get()); // print the x position
 
@@ -344,104 +309,66 @@ void opcontrol() {
       // pros::lcd::print(1,"hello %d" , AutonPot.get_value());
 
       // pros::lcd::print(5,"test %i" , get_selected_auton(AutonPot.get_value()));
-      pros::lcd::print(6,"drive ceiling speed: %i" , drive_ceiling_speed);
+    if(Controller.get_digital_new_press(DIGITAL_Y)){wingPiston.set_value(wingState++%2);}
+		if(Controller.get_digital_new_press(DIGITAL_B)){tonguePiston.set_value(tongueState++%2);}
+		
+		float j1=0.5*Controller.get_analog(ANALOG_RIGHT_X);
+		float j3=0.5*Controller.get_analog(ANALOG_LEFT_Y);
 
+		drive_left.move(j3+j1);
+		drive_right.move(j3-j1);
 
-        float leftX = curve_drive_values(controller.get_analog(ANALOG_LEFT_X), 10.0);
-
-        split_arcade(controller.get_analog(ANALOG_LEFT_X),
-                     controller.get_analog(ANALOG_LEFT_Y), 
-                     controller.get_analog(ANALOG_RIGHT_X), 
-                     controller.get_analog(ANALOG_RIGHT_Y), 
-                     15, 
-                     15, 
-                     80, 
-                     controller.get_digital(LIMIT_DRIVE_SPEED_BUTTON));
-
-    
-
-    // if (controller.get_digital(UP_MATCH_LOAD_SPEED_BUTTON)) {
-    //   up_match_load_speed_pressed = true;
-    // } else {
-    //   up_match_load_speed_pressed = false;
-
-    // }
-
-    // if (up_match_load_speed_pressed && ! up_match_load_speed_pressed_last) {
-    //   drive_ceiling_speed += 1;
-    // }
-
-    // up_match_load_speed_pressed_last = up_match_load_speed_pressed;
-
-    // if (controller.get_digital(DOWN_MATCH_LOAD_SPEED_BUTTON)) {
-    //   down_match_load_speed_pressed = true;
-    // } else {
-    //   down_match_load_speed_pressed = false;
-    // }
-
-    // if (down_match_load_speed_pressed && ! down_match_load_speed_pressed_last) {
-    //   drive_ceiling_speed -= 1;
-    // }
-
-    // down_match_load_speed_pressed_last = down_match_load_speed_pressed;
-
-    if (controller.get_digital(CATA_HANG_BUTTON)) {
-				cata_hang_btn_pressed = true;
-			} else {
-				cata_hang_btn_pressed = false;
+		//storage
+		if(Controller.get_digital(DIGITAL_R1)){
+			LowerIntake.move(94*0.5);
+			MiddleIntake.move(63*0.5);
+			UpperIntake.move(63);
+		}
+	
+		if(Controller.get_digital_new_press(DIGITAL_R1)){
+			MiddleIntake.brake();
+			UpperIntake.brake();
 		}
 
-		if (cata_hang_btn_pressed && ! cata_hang_btn_pressed_last) {
-      cata_hang = true;
-		} else {
-      cata_hang = false;
-    }
-
-    	cata_hang_btn_pressed_last = cata_hang_btn_pressed;
-
-        spin_intake_driver(controller.get_digital(DIGITAL_L1), controller.get_digital(DIGITAL_L2));
-        spin_cata_driver(controller.get_digital(DIGITAL_R1), cata_hang);
-
-    
-
-    if (controller.get_digital(ACTUATE_INTAKE_BUTTON)) {
-      actuate_intake_pressed = true;
-    } else {
-      actuate_intake_pressed = false;
-    }
-
-    if (actuate_intake_pressed && ! actuate_intake_pressed_last) {
-      if (!intake_actuated_value) actuate_intake(true);
-      else actuate_intake(false);
-    }
-
-    actuate_intake_pressed_last = actuate_intake_pressed;
-
-    if (controller.get_digital(RIGHT_BACK_WING_BUTTON)) {
-				right_back_wing_btn_pressed = true;
-			} else {
-				right_back_wing_btn_pressed = false;
+		//move blocks up
+		if(Controller.get_digital(DIGITAL_L1)){
+			LowerIntake.move(94*0.5);
+			MiddleIntake.move(127*0.5);
+			UpperIntake.move(127);
 		}
 
-		if (right_back_wing_btn_pressed && ! right_back_wing_btn_pressed_last) {
-			if (!right_back_wing_actuated_value) actuate_right_back_wing(true);
-			else actuate_right_back_wing(false);
+		//move blocks down
+		if(Controller.get_digital(DIGITAL_R2)){
+			LowerIntake.move(-31*0.5);
+			MiddleIntake.move(-63*0.5);
+			UpperIntake.move(-63);
 		}
 
-    	right_back_wing_btn_pressed_last = right_back_wing_btn_pressed;
-
-		if (controller.get_digital(LEFT_BACK_WING_BUTTON)) {
-				left_back_wing_btn_pressed = true;
-			} else {
-				left_back_wing_btn_pressed = false;
+		//middle goal
+		if(Controller.get_digital(DIGITAL_L2)){
+			LowerIntake.move(63*0.5);
+			MiddleIntake.move(94*0.5);
+			UpperIntake.move(-106);
 		}
 
-		if (left_back_wing_btn_pressed && ! left_back_wing_btn_pressed_last) {
-			if (!left_back_wing_actuated_value) actuate_left_back_wing(true);
-			else actuate_left_back_wing(false);
+		//un-middle goal
+		if(Controller.get_digital(DIGITAL_X)){
+			LowerIntake.move(-63*0.5);
+			MiddleIntake.move(-94*0.5);
+			UpperIntake.move(106);
 		}
 
-    	left_back_wing_btn_pressed_last = left_back_wing_btn_pressed;
+		//unstucky
+		if(Controller.get_digital(DIGITAL_DOWN)){
+			LowerIntake.move(-127*0.5);
+			MiddleIntake.move(127*0.5);
+		}
+
+		if(Controller.get_digital(DIGITAL_RIGHT)){
+			MiddleIntake.brake();
+			LowerIntake.brake();
+			UpperIntake.brake();
+		}
 
     pros::delay(5);
 

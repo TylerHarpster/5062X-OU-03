@@ -227,7 +227,6 @@ void skills() {
     chassis.setPose(60, 32, 0);
 
     chassis.moveTo(51, 42, 700, 200);
-
     
 
 
